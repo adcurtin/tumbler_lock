@@ -2,11 +2,13 @@
 
 
 // range 1 to 4
-secret = [4, 2, 3, 1, 2];
+secret = [4, 2, 3, 1, 2, 4, 2];
 
 n_pins = len(secret);
 
 box_h   = 6*n_pins + 18;// + 18;
+
+n_split = 4;
 
 $fn = 100;
 
@@ -27,6 +29,9 @@ module base() {
         }
 
         translate([0, -2.6, 6*n_pins]) cube([20, 20, 10]);
+
+        //split cylinder latch hole
+        translate([0, -2.6, 6*n_split -2.5]) cube([20, 20, 5]);
     }
 
     difference() {
@@ -97,14 +102,25 @@ module plug() {
         for (i = [0: n_pins-1]) {
             translate([0, 0, 5 + i * 6]) rotate([0, -90, 0]) cylinder(h=10, r=2.2);
         }
+
+        // split the cylinder
+        translate([0, 0, 5 - 3 + n_split * 6])  cylinder(h=0.1, r=11);
+
+        rotate([0, 0, -90]) translate([0, 10.2, 6*n_split]) cube([5, 8, 4], true);
     }
 
     rotate([0, 0, -90]) translate([0, 12, 6*n_pins + 4]) cube([5, 8, 4], true);
+
 }
 
 function blade(v, x) =
     x < len(secret)
         ? concat(ridge(x), blade(v, x + 1))
+        : v;
+
+function short_blade(v, x) = 
+    x < n_split
+        ? concat(ridge(x), short_blade(v, x + 1))
         : v;
 
 function ridge(x) = [
@@ -129,6 +145,49 @@ module key() {
         polygon(concat([[-4, -2], [-4, 5]], blade([], 0), [[6*n_pins+2, -2]] ));
 
         // echo(concat([[-4, -2], [-4, 5]], blade([], 0), [[26, -2]] ));
+
+    // head
+    translate([0, -0.9, 0])
+    rotate([270, 0, 0])
+    difference() {
+        linear_extrude(3.8) offset(2)
+            polygon([
+                [-10, 5], [-6, 5], [-6, 2], [5, 2],
+                [5, 5], [12, 5], [10, 19], [-8, 19]
+            ]);
+
+
+        translate([0, 0, -0.1]) linear_extrude(4) offset(2)
+            polygon([
+                [5, 16], [-3, 16], [-4, 15], [6, 15]
+            ]);
+
+    }
+}
+
+module short_key() {
+
+    translate([2.1, -0.9, -3]) hull() {
+        cube([3.8, 3.8, 6*n_split + 5 -1]);
+
+        translate([0.55, 1, 6*n_split + 5 -1]) cube([2.8, 2.25, 1]);
+    }
+
+        // key blade
+
+        difference() {
+            translate([1, 0.9, 2])
+            rotate([0, 0, 90])
+            rotate([0, -90, 0])
+            linear_extrude(1.8)
+            polygon(concat([[-4, -2], [-4, 5]], short_blade([], 0), [[6*n_split, -2]] ));
+
+            echo(concat([[-4, -2], [-4, 5]], short_blade([], 0), [[6*n_split+2, -2]] ));
+
+
+            translate([0, -2, 6*n_split - 4.345 + 3*sqrt(2)]) rotate([45, 0, 0]) cube([10, 10, 3]);
+
+        }
 
     // head
     translate([0, -0.9, 0])
@@ -197,12 +256,16 @@ module preview() {
             base();
             translate([-14, 0, 5]) springs();
             translate([0, 0, 6*n_pins + 3]) stop_ring();
+
+
+            rotate([0, 0, -90]) translate([0, 12 - 0.9, 6*n_split]) cube([5, 8 + 1.8, 4], true);
         }
         translate([-40, -40, -3]) cube([100, 40, 6*n_pins + 26]);
     }
 
     translate([-2.55, 0, 5]) pins();
     key();
+    // short_key();
 
     difference() {
         translate([-30, -20, 0]) box();
@@ -210,28 +273,54 @@ module preview() {
     }
 }
 
-preview();
+// preview();
 
 
 // *** print ***
 
-// translate([70, 20, 6*n_pins + 6])
-// rotate([0, 180, 90]) plug();
+// top half of plug
+translate([70, 20, 6*n_split + 2]) intersection() {
+        rotate([0, 180, 90]) plug();
+        translate([-20, -20, -6*n_split - 2]) cube([40, 40, 100]);
+}
 
-// translate([30, 20, 2]) base();
+// bottom half of plug
+translate([100, 20, 6*n_pins + 6]) intersection() {
+        rotate([0, 180, 90]) plug();
+        translate([20, -20, -6*n_split - 2]) rotate([0, 180, 0]) cube([40, 40, 100]);
+}
 
-// translate([-10, -50, 0])
-// rotate([0, 270, 0]) springs();
 
-// translate([-70, -30, 5])
-// rotate([0, 180, 0]) stop_ring();
+translate([30, 20, 2]) base();
 
-// translate([35, -45, 7.3])
-// rotate([180, 270, 0]) pins();
+translate([-50, -50, 0])
+rotate([0, 270, 0]) springs();
 
-// translate([30, -25, 0.9])
-// rotate([90, 0, 90]) key();
+translate([-25, -30, 5])
+rotate([0, 180, 0]) stop_ring();
 
-// translate([-10, 0, box_h])
-// rotate([0, 180, 0]) box();
+translate([35, -45, 7.3])
+rotate([180, 270, 0]) pins();
 
+translate([30, -25, 0.9])
+rotate([90, 0, 90]) key();
+
+translate([30, -65, 0.9])
+rotate([90, 0, 90])
+short_key();
+
+
+translate([-10, 0, box_h])
+rotate([0, 180, 0]) box();
+
+
+
+// split cylinder lock part
+translate([0, -50, 0])
+cube([5, 8 + 1.8, 4], true);
+
+
+
+
+
+// translate([-100, -100, -0.9 -0.1 - 0.0]) #cube([200, 200, 1]);
