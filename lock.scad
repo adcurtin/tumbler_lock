@@ -2,7 +2,7 @@
 
 
 // range 1 to 4
-secret = [4, 2, 3, 1, 2, 4, 2];
+secret = [4, 2, 3, 1, 4, 3, 1];
 
 n_pins = len(secret);
 
@@ -317,7 +317,7 @@ rotate([0, 180, 0]) box();
 
 // split cylinder lock part
 translate([0, -50, 0])
-cube([5, 8 + 1.8, 4], true);
+cube([5, 8 + 1.8, 4]);
 
 
 
